@@ -30,6 +30,7 @@ class ActiveGameObject(GameObject):
             life)
         self.paths: deque[pygame.math.Vector2] = deque(maxlen=5)
         self.is_move_cancelled = False
+        self.moved = False
         self.direction = self.direction_system()
         self.speed: int = math.floor(speed)
         self.owner_uuid: uuid.UUID = None
@@ -80,4 +81,5 @@ class ActiveGameObject(GameObject):
                     self.handle_actions(action)
         self.direction.update()
         move and self.move()
+        self.moved = move
         return True

@@ -5,7 +5,7 @@ import uuid
 import numpy as np
 from collections import deque
 from maenv.utils.colors import WHITE
-from maenv.core.state import ObjectState
+from maenv.core.state import StateData
 
 
 class GameObject(pygame.Rect):
@@ -29,7 +29,7 @@ class GameObject(pygame.Rect):
         self.uuid = uuid.uuid4()
         self.short_id = -1
         self.spawn_radius = 0
-        self._states: deque[ObjectState] = deque()
+        self._states: deque[StateData] = deque()
         # if [2] is -1 is randomized range [0] , [1]
         self.delay_before_spawn = (0, 0, 0)
 
@@ -37,10 +37,14 @@ class GameObject(pygame.Rect):
     def position(self):
         return self.centery << 16 | self.centerx
 
-    def state_update(self, value: ObjectState):
-        self._states.append(value)
+    def update_state(self, state: StateData, target: GameObject = None, value: any = None):
+        self._states.append(StateData(
+            state=state,
+            target=target.short_id if target else None,
+            value=value,
+        ))
 
-    def get_states(self) -> list[ObjectState]:
+    def get_states(self) -> list[StateData]:
         states = []
         while self._states:
             states.append(self._states.pop())

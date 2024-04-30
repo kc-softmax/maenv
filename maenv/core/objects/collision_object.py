@@ -7,10 +7,6 @@ class CollisionObjectType(IntEnum):
 
 
 class CollisionObject(GameObject):
-    """
-        현재는 타일과 충돌시 발생하는 object
-        1회용이다.
-    """
 
     collision_type = CollisionObjectType.TILE
 

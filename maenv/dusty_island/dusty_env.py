@@ -7,7 +7,7 @@ from maenv.utils.colors import (
 from maenv.core.maenv import MaEnv
 from maenv.core.actions import ControlAction
 from maenv.core.tile import TileState, Tile
-from maenv.core.state import ObjectState
+from maenv.core.state import StateData, ObjectState
 from maenv.core.objects.game_object import GameObject
 from maenv.core.objects.active_object import ActiveGameObject
 from maenv.core.objects.passive_object import PassiveGameObject
@@ -160,9 +160,9 @@ class DustyEnv(MaEnv):
             if src.owner_uuid == other.uuid:
                 return
             if not isinstance(other, CollisionObject):
-                other.get_hit(src.damage)
-                other.state_update(ObjectState.HIT)
                 src.deactivate()
+                other.get_hit(src.damage)
+                self._add_hit_event(src, other)
         elif isinstance(src, NormalStone):
             # 결국 데미지를 주냐 안주냐 차이
             # 기본적으로 stone은 부딪히면 터진다.
@@ -172,15 +172,16 @@ class DustyEnv(MaEnv):
                 return
             src_destory = True
             src.deactivate()
-            if isinstance(other, Tree):
-                pass  # 나무에게는 피해를 주지 않는다.
-            else:
+            if not isinstance(other, Tree):
+                # 나무에게는 피해를 주지 않는다.
                 other.get_hit(src.damage)
+            self._add_hit_event(src, other)
         elif isinstance(src, Bomb):
             if not src.is_activate():
                 return
             if src.hit(other.short_id):
                 other.get_hit(src.damage)
+                self._add_hit_event(src, other)
 
         src_destory and self.removing_game_object_ids.append(
             src.short_id)
@@ -188,17 +189,41 @@ class DustyEnv(MaEnv):
         other_destory and self.removing_game_object_ids.append(
             other.short_id)
 
+    def _add_hit_event(self, src: GameObject, target: GameObject):
+        src.update_state(
+            state=ObjectState.HITTING,
+            target=target,
+        )
+        target.update_state(
+            state=ObjectState.DAMAGED,
+            target=src,
+        )
+
+    def _add_moving_event(sef, src: GameObject):
+        src.update_state(
+            state=ObjectState.MOVING,
+            value=src.position
+        )
+
     def _step_processing(self, actions: dict[int | str, list[ControlAction]]):
         super()._step_processing(actions)
         for summon in self.summons.values():
-            summon.state_update(ObjectState.MOVING)
+            pass
 
         for agent in self.agents.values():
+
             while agent.pending_weapons:
                 self.pending_spawn_objects.append(agent.pending_weapons.pop())
-            agent.state_update(ObjectState.MOVING)
+
+            if not agent.is_move_cancelled and agent.moved:
+                self._add_moving_event(agent)
+            else:
+                # 무조건 하나는 넣는다. 규칙을 정해서 해야한다.
+                agent.update_state(ObjectState.IDLE)
+
             if agent.normal_weapon.is_activate():
-                agent.normal_weapon.state_update(ObjectState.MOVING)
+                # 현재 여기서 처리하지만, 장기적인 규칙에는 어울리지 않는다.
+                self._add_moving_event(agent.normal_weapon)
 
     def _post_step_processing(self):
         super()._post_step_processing()
