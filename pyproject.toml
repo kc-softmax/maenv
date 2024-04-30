@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "maenv"
+version = "0.0.1"
+description = ""
+authors = ["kc-softmax"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+
+[tool.poetry.dependencies]
+python = "<4.0,>=3.10"
+cloudpickle = ">=3.0.0"
+Farama-Notifications = ">=0.0.4"
+gymnasium = ">=0.29.1"
+numpy = ">=1.26.4"
+pygame = ">=2.5.2"
+PyTMX = ">=3.32"
+typing_extensions = ">=4.11.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
