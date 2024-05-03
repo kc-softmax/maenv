@@ -5,7 +5,7 @@ import uuid
 import numpy as np
 from collections import deque
 from maenv.utils.colors import WHITE
-from maenv.core.state import StateData
+from maenv.core.state import StateData, ObjectState
 
 
 class GameObject(pygame.Rect):
@@ -24,6 +24,7 @@ class GameObject(pygame.Rect):
             center_x - (width * 0.5),
             center_y - (height * 0.5),
             width, height)
+        self.origin_life = life
         self.life = life
         self.generate_time: float = timeit.default_timer()
         self.uuid = uuid.uuid4()
@@ -37,11 +38,22 @@ class GameObject(pygame.Rect):
     def position(self):
         return self.centery << 16 | self.centerx
 
-    def update_state(self, state: StateData, target: GameObject = None, value: any = None):
+    def update_state(
+        self,
+        state: ObjectState,
+        target: GameObject = None,
+        value: any = None
+    ):
+        if state == ObjectState.DAMAGED:
+            # 0 ~ 10
+            state_value = round(self.life / self.origin_life * 10)
+        else:
+            state_value = value
+
         self._states.append(StateData(
             state=state,
             target=target.short_id if target else None,
-            value=value,
+            value=state_value,
         ))
 
     def get_states(self) -> list[StateData]:
