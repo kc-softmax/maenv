@@ -6,9 +6,10 @@ class ObjectState(IntEnum):
     IDLE = 1
     MOVING = 2
     HITTING = 3
-    CASTING = 4  # 스킬을 발사형
+    CASTING = 4
     DAMAGED = 5
     INVISIBLE = 6
+    TARGETING = 7
 
 
 @dataclass

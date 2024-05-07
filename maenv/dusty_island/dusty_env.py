@@ -5,6 +5,7 @@ from maenv.utils.colors import (
     BLACK
 )
 from maenv.core.maenv import MaEnv
+from maenv.utils import get_distance
 from maenv.core.actions import ControlAction
 from maenv.core.tile import TileState, Tile
 from maenv.core.state import StateData, ObjectState
@@ -52,7 +53,7 @@ class DustyEnv(MaEnv):
             [Tree() for _ in range(self.tree_count)])
         assert len(agent_names) < MAX_AGENTS
         for i, agent_name in enumerate(agent_names):
-            team = Team.COLONISTS if i % 2 == 0 else Team.GUARDIANS
+            team = Team.COLONISTS if i % 2 != 0 else Team.GUARDIANS
             self._generate_dusty(agent_name, team)
 
     def reset(self, seed: int):
@@ -160,9 +161,9 @@ class DustyEnv(MaEnv):
             if src.owner_uuid == other.uuid:
                 return
             if not isinstance(other, CollisionObject):
-                src.deactivate()
-                other.get_hit(src.damage)
-                self._add_hit_event(src, other)
+                if other.get_hit(src.damage):
+                    src.get_hit(src.damage)
+                    self._add_hit_event(src, other)
         elif isinstance(src, NormalStone):
             # 결국 데미지를 주냐 안주냐 차이
             # 기본적으로 stone은 부딪히면 터진다.
@@ -171,11 +172,12 @@ class DustyEnv(MaEnv):
             if isinstance(other, Dusty) and src.owner_uuid == other.uuid:
                 return
             src_destory = True
-            src.deactivate()
-            if not isinstance(other, Tree):
+            src.get_hit(src.damage)
+            if isinstance(other, Tree):
+                return
                 # 나무에게는 피해를 주지 않는다.
-                other.get_hit(src.damage)
-            self._add_hit_event(src, other)
+            if other.get_hit(src.damage):
+                self._add_hit_event(src, other)
         elif isinstance(src, Bomb):
             if not src.is_activate():
                 return
@@ -205,15 +207,44 @@ class DustyEnv(MaEnv):
             value=src.position
         )
 
+    def _get_auto_targeting(self, dusty: Dusty) -> GameObject | None:
+        target_dusty: Dusty = None
+        min_distnace = dusty.get_targeting_range() + 1
+        for target in self.agents.values():
+            if target == dusty:
+                continue
+            if target.team == dusty.team:
+                continue
+            distance = get_distance(dusty.center, target.center)
+            if distance > dusty.get_targeting_range():
+                continue
+            angle_diff = dusty.direction.get_vector().angle_to(
+                pygame.Vector2(
+                    target.centerx - dusty.centerx,
+                    target.centery - dusty.centery
+                ).normalize())
+
+            if abs(angle_diff) > dusty.get_targeting_angle():
+                continue
+            if distance < min_distnace:
+                distance = min_distnace
+                target_dusty = target
+
+        return target_dusty
+
     def _step_processing(self, actions: dict[int | str, list[ControlAction]]):
         super()._step_processing(actions)
         for summon in self.summons.values():
             pass
 
         for agent in self.agents.values():
+            if agent.normal_weapon.require_auto_targeting():
+                agent.set_target(self._get_auto_targeting(agent))
 
             while agent.pending_weapons:
-                self.pending_spawn_objects.append(agent.pending_weapons.pop())
+                weapon = agent.pending_weapons.pop()
+                weapon.force_direction_vector = agent.get_target_vector()
+                self.pending_spawn_objects.append(weapon)
 
             if not agent.is_move_cancelled and agent.moved:
                 self._add_moving_event(agent)
@@ -221,7 +252,7 @@ class DustyEnv(MaEnv):
                 # 무조건 하나는 넣는다. 규칙을 정해서 해야한다.
                 agent.update_state(ObjectState.IDLE)
 
-            if agent.normal_weapon.is_activate():
+            if agent.normal_weapon.is_activated():
                 # 현재 여기서 처리하지만, 장기적인 규칙에는 어울리지 않는다.
                 self._add_moving_event(agent.normal_weapon)
 

@@ -195,15 +195,14 @@ class MaEnv(gym.Env):
 
     def _step_processing(self, actions: dict[int | str, list[ControlAction]]):
         for game_object in self.game_objects.values():
-            game_object: GameObject
+            if isinstance(game_object, ActiveGameObject):
+                object_actions = actions.get(game_object.short_id, [])
+                object_actions and game_object.set_actions(object_actions)
+                game_object.act()
             if game_object.life < 1:
                 self.removing_game_object_ids.append(game_object.short_id)
                 continue
-            if not isinstance(game_object, ActiveGameObject):
-                continue
-            object_actions = actions.get(game_object.short_id, [])
-            object_actions and game_object.set_actions(object_actions)
-            not game_object.act() and self.removing_game_object_ids.append(game_object.short_id)
+            game_object.upadate_object()
 
     def _post_step_processing(self):
         pass

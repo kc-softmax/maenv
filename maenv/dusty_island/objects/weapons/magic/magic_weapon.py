@@ -21,8 +21,7 @@ class MagicWeapon(Weapon):
         super(MagicWeapon, self).__init__(
             MAGIC_WEAPON_SIZE,
             MAGIC_WEAPON_SIZE,
-            1,
-            0)
+            1)
         self.artifact: Artifact = None
         self.weapon_direction: Vector2 = None
         self.cooldown = 0

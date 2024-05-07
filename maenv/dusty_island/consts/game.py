@@ -1,8 +1,6 @@
 from __future__ import annotations
-import random
 
 from enum import IntEnum
-from maenv.dusty_island.consts.actions import DustyReservedAction
 
 MAX_AGENTS = 64
 MAX_ARTIFACT_COUNT_AT_ONCE = 10

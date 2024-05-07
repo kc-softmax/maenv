@@ -3,7 +3,9 @@ import pygame
 import math
 import warnings
 from collections import deque
+from pygame.math import Vector2
 from maenv.core.objects.game_object import GameObject
+from maenv.core.state import ObjectState
 from maenv.core.cardinal_direction import CardinalDirection, CardinalDirectionType
 from maenv.core.actions import ControlAction
 
@@ -29,17 +31,36 @@ class ActiveGameObject(GameObject):
             height,
             life)
         self.paths: deque[pygame.math.Vector2] = deque(maxlen=5)
+        self.target: GameObject = None
         self.is_move_cancelled = False
         self.moved = False
+        self.force_direction_vector: Vector2 = None
         self.direction = self.direction_system()
         self.speed: int = math.floor(speed)
         self.owner_uuid: uuid.UUID = None
         self.actions: list[ControlAction] = []
 
     def move(self):
-        next_point = self.center + self.direction.get_vector() * self.speed
+        if self.force_direction_vector:
+            direction_vector = self.force_direction_vector
+        else:
+            direction_vector = self.direction.get_vector()
+        next_point = self.center + direction_vector * self.speed
         self.center = next_point
         self.paths.appendleft(next_point)
+
+    def set_target(self, target: GameObject):
+        if target != self.target:
+            self.update_state(ObjectState.TARGETING, target)
+        self.target = target
+
+    def get_target_vector(self) -> pygame.Vector2 | None:
+        if self.target:
+            return pygame.Vector2(
+                self.target.centerx - self.centerx,
+                self.target.centery - self.centery,
+            ).normalize()
+        return None
 
     def cancel_movement(self):
         if self.is_move_cancelled:
@@ -64,7 +85,7 @@ class ActiveGameObject(GameObject):
     def update_direction(self, direction_type: CardinalDirectionType):
         self.direction.set_direction(direction_type)
 
-    def act(self) -> bool:
+    def act(self):
         move = False
         while self.actions:
             action = self.actions.pop()
@@ -82,4 +103,3 @@ class ActiveGameObject(GameObject):
         self.direction.update()
         move and self.move()
         self.moved = move
-        return True

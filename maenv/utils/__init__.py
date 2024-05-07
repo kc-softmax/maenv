@@ -1,5 +1,11 @@
-
+import math
 import numpy as np
+
+
+def get_distance(src: tuple[int, int], dst: tuple[int, int]):
+    return math.hypot(
+        src[0] - dst[0],
+        src[1] - dst[1])
 
 
 def randomize_center(

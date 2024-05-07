@@ -32,14 +32,14 @@ class Guardians(Dusty):
     def handle_actions(self, action: ControlAction):
         super().handle_actions(action)
         artifact_type = None
-        match action:
-            case ControlAction.SPECIAL_SKILL_1:
-                artifact_type = ArtifactType.WOLF
-            case ControlAction.SPECIAL_SKILL_2:
-                artifact_type = ArtifactType.BEAR
-            case ControlAction.SPECIAL_SKILL_3:
-                pass
-            case ControlAction.SPECIAL_SKILL_4:
-                artifact_type = ArtifactType.TIGER
+        # match action:
+        #     case ControlAction.SPECIAL_SKILL_1:
+        #         artifact_type = ArtifactType.WOLF
+        #     case ControlAction.SPECIAL_SKILL_2:
+        #         artifact_type = ArtifactType.BEAR
+        #     case ControlAction.SPECIAL_SKILL_3:
+        #         pass
+        #     case ControlAction.SPECIAL_SKILL_4:
+        #         artifact_type = ArtifactType.TIGER
         if artifact := self.get_artifact(artifact_type):
             self.magic_weapon and self.magic_weapon.set_artifact(artifact)

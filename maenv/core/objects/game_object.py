@@ -11,6 +11,7 @@ from maenv.core.state import StateData, ObjectState
 class GameObject(pygame.Rect):
 
     render_color = WHITE
+    damage_protection_time = 0
 
     def __init__(
         self,
@@ -29,6 +30,7 @@ class GameObject(pygame.Rect):
         self.generate_time: float = timeit.default_timer()
         self.uuid = uuid.uuid4()
         self.short_id = -1
+        self.damage_protection = self.damage_protection_time
         self.spawn_radius = 0
         self._states: deque[StateData] = deque()
         # if [2] is -1 is randomized range [0] , [1]
@@ -98,10 +100,14 @@ class GameObject(pygame.Rect):
     def require_points(self) -> bool:
         return self.centerx == 0 and self.centery == 0
 
-    def get_hit(self, damage: int):
+    def get_hit(self, damage: int) -> bool:
         if self.life < 0:
-            return
+            return False
+        if self.damage_protection > 0:
+            return False
+        self.damage_protection = self.damage_protection_time
         self.life -= damage
+        return True
 
     def set_short_id(self, short_id: int):
         self.short_id = short_id
@@ -111,6 +117,10 @@ class GameObject(pygame.Rect):
 
     def sync(self, target: tuple[int, int]):
         self.center = target
+
+    def upadate_object(self):
+        if self.damage_protection > 0:
+            self.damage_protection -= 1
 
     def __hash__(self):
         # using id

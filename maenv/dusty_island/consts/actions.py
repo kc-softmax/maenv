@@ -1,14 +1,10 @@
-from enum import IntEnum
+from dataclasses import dataclass
+from maenv.core.actions import ControlAction
 
 
-class DustyReservedAction(IntEnum):
-    BASIC_STONE_THROW = 1
-    BASIC_AXE_SWING = 2
-    SUMMON_WOLF = 3
-    SUMMON_BEAR = 4
-    SUMMON_DEER = 5
-    SUMMON_TIGER = 6
-    FIRE_SHOTGUN = 7
-    FIRE_POISON_GAS = 8
-    DRINK_POTION = 9
-    AIR_STRIKE = 10
+@dataclass
+class DustyControlAction(ControlAction):
+    DEFAULT_SKILL_DOWN = 5
+    DEFAULT_SKILL_UP = 6
+    SPECIAL_SKILL_DOWN = 7
+    SPECIAL_SKILL_UP = 8

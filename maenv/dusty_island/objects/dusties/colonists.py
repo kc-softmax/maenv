@@ -37,16 +37,16 @@ class Colonists(Dusty):
     def handle_actions(self, action: ControlAction):
         super().handle_actions(action)
         artifact_type = None
-        match action:
-            case ControlAction.SPECIAL_SKILL_1:
-                artifact_type = ArtifactType.SHOTGUN
-            case ControlAction.SPECIAL_SKILL_2:
-                artifact_type = ArtifactType.POISON_BOMB
-            case ControlAction.SPECIAL_SKILL_3:
-                pass
-                # artifact_type = WeaponType.POTION
-            case ControlAction.SPECIAL_SKILL_4:
-                artifact_type = ArtifactType.BUSTER_CALL
+        # match action:
+        #     case ControlAction.SPECIAL_SKILL_1:
+        #         artifact_type = ArtifactType.SHOTGUN
+        #     case ControlAction.SPECIAL_SKILL_2:
+        #         artifact_type = ArtifactType.POISON_BOMB
+        #     case ControlAction.SPECIAL_SKILL_3:
+        #         pass
+        #         # artifact_type = WeaponType.POTION
+        #     case ControlAction.SPECIAL_SKILL_4:
+        #         artifact_type = ArtifactType.BUSTER_CALL
 
         if artifact := self.get_artifact(artifact_type):
             self.magic_weapon and self.magic_weapon.set_artifact(artifact)
