@@ -6,5 +6,7 @@ from maenv.core.actions import ControlAction
 class DustyControlAction(ControlAction):
     DEFAULT_SKILL_DOWN = 5
     DEFAULT_SKILL_UP = 6
-    SPECIAL_SKILL_DOWN = 7
-    SPECIAL_SKILL_UP = 8
+    DEFAULT_SKILL_CANCEL = 7
+    SPECIAL_SKILL_DOWN = 8
+    SPECIAL_SKILL_UP = 9
+    SPECIAL_SKILL_CANCEL = 8
