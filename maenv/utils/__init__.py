@@ -25,3 +25,18 @@ def randomize_center(
     # 원래 중심점에 랜덤 변화를 추가
     new_center = (origin_center[0] + dx, origin_center[1] + dy)
     return new_center
+
+
+def get_screen_angle(x: int, y: int):
+    # Flip the y coordinate
+    flipped_y = -y
+    # Reference for the screen angle (pointing to 'up' in screen coords)
+    src_angle = math.atan2(flipped_y, x)
+    angle_up = math.atan2(1, 0)
+    angle = src_angle - angle_up
+    # Normalize the angle to be within the range from -pi to pi
+    if angle > math.pi:
+        angle -= 2 * math.pi
+    elif angle < -math.pi:
+        angle += 2 * math.pi
+    return angle

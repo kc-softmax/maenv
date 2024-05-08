@@ -1,4 +1,4 @@
-
+import math
 from maenv.dusty_island.consts.weapons.normal_weapons import (
     NORMAL_AXE_ATTACK_RANGE,
     NORMAL_AXE_COOLDOWN,
@@ -27,8 +27,7 @@ class NormalAxe(Weapon):
             NORMAL_AXE_LIFE,
         )
 
-    def act(self):
-        super().act()
+    def get_next_position(self) -> tuple[int, int]:
         progress = self.active_gauge / NORMAL_AXE_DURATION
         axe_direction = self.direction.get_vector().rotate(
             NORMAL_AXE_SWING_ANGLE / 2 - NORMAL_AXE_SWING_ANGLE * progress
@@ -37,5 +36,11 @@ class NormalAxe(Weapon):
         offset_x = self.width * 0.5 + self.attack_range
         offset_y = self.height * 0.5 + self.attack_range
 
-        self.centerx += offset_x * axe_direction.x
-        self.centery += offset_y * axe_direction.y
+        return [
+            math.floor(self.centerx + offset_x * axe_direction.x),
+            math.floor(self.centery + offset_y * axe_direction.y)
+        ]
+
+    def act(self):
+        super().act()
+        self.center = self.get_next_position()
