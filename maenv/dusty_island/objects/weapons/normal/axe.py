@@ -26,6 +26,7 @@ class NormalAxe(Weapon):
             NORMAL_AXE_SIZE,
             NORMAL_AXE_LIFE,
         )
+        self.eventless = True
 
     def get_next_position(self) -> tuple[int, int]:
         progress = self.active_gauge / NORMAL_AXE_DURATION

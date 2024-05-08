@@ -118,6 +118,7 @@ class MaEnv(gym.Env):
             address = self.map.get_tile_address(
                 game_object.centerx, game_object.centery)
             if address in self.passive_address_map:
+                print(self.passive_address_map[address])
                 warn('check remove passive object algorithm')
             self.passive_address_map[address].append(game_object)
 
@@ -174,12 +175,15 @@ class MaEnv(gym.Env):
                 raise Exception(f"GameObject {short_id} already exists")
             game_object.set_short_id(short_id)
             self.game_objects[short_id] = game_object
-            self._handle_register_object(game_object)
+            not game_object.eventless and self._handle_register_object(
+                game_object)
         delay_spawn_objects and self.pending_spawn_objects.extend(
             delay_spawn_objects)
 
     def _update_state_of_objects(self):
         for game_object in self.game_objects.values():
+            if game_object.eventless:
+                continue
             states = game_object.get_states()
             states and self._handle_update_object(game_object, states)
 
@@ -191,7 +195,8 @@ class MaEnv(gym.Env):
             if not game_object:
                 continue
             self.id_manager.release_id(game_object.uuid, game_object.short_id)
-            self._handle_remove_object(game_object)
+            not game_object.eventless and self._handle_remove_object(
+                game_object)
 
     def _step_processing(self, actions: dict[int | str, list[ControlAction]]):
         for game_object in self.game_objects.values():

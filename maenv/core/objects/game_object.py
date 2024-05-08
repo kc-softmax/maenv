@@ -35,6 +35,8 @@ class GameObject(pygame.Rect):
         self._states: deque[StateData] = deque()
         # if [2] is -1 is randomized range [0] , [1]
         self.delay_before_spawn = (0, 0, 0)
+        self.impenetrability = False
+        self.eventless = False
 
     @property
     def position(self):
@@ -101,6 +103,8 @@ class GameObject(pygame.Rect):
         return self.centerx == 0 and self.centery == 0
 
     def get_hit(self, damage: int) -> bool:
+        if self.impenetrability:
+            return False
         if self.life < 0:
             return False
         if self.damage_protection > 0:

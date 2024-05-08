@@ -1,7 +1,7 @@
 import pygame
 from maenv.core.objects.game_object import GameObject
 from maenv.core.objects.active_object import ActiveGameObject
-
+from maenv.core.state import ObjectState
 from maenv.dusty_island.consts.game import (
     Team,
     MAX_AQUIRE_ARTIFACTS
@@ -87,6 +87,7 @@ class Dusty(ActiveGameObject):
                     self.normal_weapon.prepare()
                 else:
                     if weapon := self.normal_weapon.activate(self.direction.current_direction):
+                        # self.update_state(ObjectState.CASTING, )
                         self.pending_weapons.append(weapon)
                         return
             case DustyControlAction.DEFAULT_SKILL_UP:

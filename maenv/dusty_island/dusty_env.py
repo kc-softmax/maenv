@@ -21,7 +21,7 @@ from maenv.dusty_island.consts.game import (
     Team,
 )
 from maenv.dusty_island.consts.artifact import ArtifactType
-from maenv.dusty_island.objects.tree import Tree
+from maenv.dusty_island.objects.tree import Tree, TrimmedTree
 from maenv.dusty_island.objects.dusties.dusty import Dusty
 from maenv.dusty_island.objects.dusties.colonists import Colonists
 from maenv.dusty_island.objects.dusties.guardians import Guardians
@@ -53,7 +53,7 @@ class DustyEnv(MaEnv):
             [Tree() for _ in range(self.tree_count)])
         assert len(agent_names) < MAX_AGENTS
         for i, agent_name in enumerate(agent_names):
-            team = Team.COLONISTS if i % 2 != 0 else Team.GUARDIANS
+            team = Team.COLONISTS if i % 2 == 0 else Team.GUARDIANS
             self._generate_dusty(agent_name, team)
 
     def reset(self, seed: int):
@@ -138,10 +138,13 @@ class DustyEnv(MaEnv):
         elif isinstance(game_object, Artifact):
             del self.artifcats[game_object.short_id]
         elif isinstance(game_object, Tree):
-            self.map.update_tile_state(
-                self.map.get_tile_address(
-                    game_object.centerx, game_object.centery),
-                TileState.NORMAL
+            # self.map.update_tile_state(
+            #     self.map.get_tile_address(
+            #         game_object.centerx, game_object.centery),
+            #     TileState.NORMAL
+            # )
+            self.pending_spawn_objects.append(
+                TrimmedTree(game_object.center)
             )
             self.removed_tree += 1
 
@@ -151,6 +154,7 @@ class DustyEnv(MaEnv):
         if isinstance(src, Dusty):
             if (
                 isinstance(other, Tree) or
+                isinstance(other, TrimmedTree) or
                 isinstance(other, CollisionObject) or
                 isinstance(other, Dusty)
             ):
@@ -171,8 +175,9 @@ class DustyEnv(MaEnv):
             # shooter 와의 충돌은 무시한다.
             if isinstance(other, Dusty) and src.owner_uuid == other.uuid:
                 return
-            src_destory = True
-            src.get_hit(src.damage)
+            if not isinstance(other, TrimmedTree):
+                src_destory = True
+                src.get_hit(src.damage)
             if isinstance(other, Tree):
                 return
                 # 나무에게는 피해를 주지 않는다.
@@ -181,8 +186,9 @@ class DustyEnv(MaEnv):
         elif isinstance(src, Bomb):
             if not src.is_activate():
                 return
-            if src.hit(other.short_id):
-                other.get_hit(src.damage)
+            if other.get_hit(src.damage):
+                # src.hit(other.short_id):
+                # other.get_hit(src.damage)
                 self._add_hit_event(src, other)
 
         src_destory and self.removing_game_object_ids.append(
