@@ -20,6 +20,7 @@ from maenv.dusty_island.consts.game import (
     MAX_ARTIFACT_COUNT_AT_ONCE,
     Team,
 )
+from maenv.dusty_island.consts.actions import DustyCastingType
 from maenv.dusty_island.consts.artifact import ArtifactType
 from maenv.dusty_island.objects.tree import Tree, TrimmedTree
 from maenv.dusty_island.objects.dusties.dusty import Dusty
@@ -250,6 +251,15 @@ class DustyEnv(MaEnv):
             while agent.pending_weapons:
                 weapon = agent.pending_weapons.pop()
                 weapon.force_direction_vector = agent.get_target_vector()
+                if isinstance(weapon, NormalAxe):
+                    agent.update_state(
+                        ObjectState.CASTING,
+                        value=DustyCastingType.VERTICAL_AXE_SWING)  # 1 is axe #TEMP
+                elif isinstance(weapon, NormalStone):
+                    agent.update_state(
+                        ObjectState.CASTING,
+                        value=DustyCastingType.THROW_STONE)  # 2 is stone
+
                 self.pending_spawn_objects.append(weapon)
 
             if not agent.is_move_cancelled and agent.moved:

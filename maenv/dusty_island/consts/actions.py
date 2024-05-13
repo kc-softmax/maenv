@@ -1,5 +1,11 @@
+from enum import IntEnum
 from dataclasses import dataclass
 from maenv.core.actions import ControlAction
+
+
+class DustyCastingType(IntEnum):
+    VERTICAL_AXE_SWING = 1
+    THROW_STONE = 2
 
 
 @dataclass

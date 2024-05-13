@@ -87,7 +87,6 @@ class Dusty(ActiveGameObject):
                     self.normal_weapon.prepare()
                 else:
                     if weapon := self.normal_weapon.activate(self.direction.current_direction):
-                        # self.update_state(ObjectState.CASTING, )
                         self.pending_weapons.append(weapon)
                         return
             case DustyControlAction.DEFAULT_SKILL_UP:
