@@ -14,7 +14,6 @@ class ActiveGameObject(GameObject):
 
     direction_system = CardinalDirection
     vision_range = 1
-    damage = 0
 
     def __init__(
         self,
@@ -34,11 +33,18 @@ class ActiveGameObject(GameObject):
         self.target: GameObject = None
         self.is_move_cancelled = False
         self.moved = False
+        self.knockback_count = 0
         self.force_direction_vector: Vector2 = None
         self.direction = self.direction_system()
         self.speed: int = math.floor(speed)
-        self.owner_uuid: uuid.UUID = None
+        self.owner_id: int = None
         self.actions: list[ControlAction] = []
+
+    def update_state(self, state: ObjectState, target: GameObject = None, value: any = None):
+        super().update_state(state, target, value)
+        if state == ObjectState.KNOCKBACK and isinstance(target, ActiveGameObject) and value > 0:
+            self.force_direction_vector = target.direction.get_vector()
+            self.knockback_count = value
 
     def move(self):
         if self.force_direction_vector:
@@ -47,7 +53,6 @@ class ActiveGameObject(GameObject):
             direction_vector = self.direction.get_vector()
         next_point = self.center + direction_vector * self.speed
         self.center = next_point
-        self.paths.appendleft(next_point)
 
     def set_target(self, target: GameObject):
         if target != self.target:
@@ -101,5 +106,15 @@ class ActiveGameObject(GameObject):
                 case _:
                     self.handle_actions(action)
         self.direction.update()
-        move and self.move()
-        self.moved = move
+
+        # 일단 knockback에 의한 이동과 일반적인 이동을 분리하여 처리한다.
+        if self.knockback_count > 0:
+            self.knockback_count -= 1
+            if self.knockback_count < 1:
+                # 버그가 발생할 수도 있다. force direciton 이 knockback에 의한 것이 아닐수도 있기 때문에
+                self.force_direction_vector = None
+            self.move()
+        else:
+            move and self.move()
+            self.moved = move
+        self.paths.appendleft((self.centerx, self.centery))

@@ -11,7 +11,7 @@ from maenv.core.state import StateData, ObjectState
 class GameObject(pygame.Rect):
 
     render_color = WHITE
-    damage_protection_time = 0
+    damage_protection_time = 10
 
     def __init__(
         self,
@@ -45,7 +45,7 @@ class GameObject(pygame.Rect):
     def update_state(
         self,
         state: ObjectState,
-        target: GameObject = None,
+        target: GameObject | int = None,
         value: any = None
     ):
         if state == ObjectState.DAMAGED:
@@ -54,9 +54,15 @@ class GameObject(pygame.Rect):
         else:
             state_value = value
 
+        target_id = None
+        if target:
+            if isinstance(target, GameObject):
+                target_id = target.short_id
+            else:
+                target_id = target
         self._states.append(StateData(
             state=state,
-            target=target.short_id if target else None,
+            target=target_id,
             value=state_value,
         ))
 
@@ -122,7 +128,7 @@ class GameObject(pygame.Rect):
     def sync(self, target: tuple[int, int]):
         self.center = target
 
-    def upadate_object(self):
+    def update_object(self):
         if self.damage_protection > 0:
             self.damage_protection -= 1
 

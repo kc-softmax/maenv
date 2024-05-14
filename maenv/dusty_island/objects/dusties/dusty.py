@@ -1,14 +1,7 @@
 import pygame
-from maenv.core.objects.game_object import GameObject
 from maenv.core.objects.active_object import ActiveGameObject
+from maenv.core.objects.game_object import GameObject
 from maenv.core.state import ObjectState
-from maenv.dusty_island.consts.game import (
-    Team,
-    MAX_AQUIRE_ARTIFACTS
-)
-from maenv.dusty_island.consts.artifact import (
-    ArtifactType
-)
 from maenv.dusty_island.consts.dusty import (
     DUSTY_SIZE,
     DUSTY_LIFE,
@@ -16,9 +9,7 @@ from maenv.dusty_island.consts.dusty import (
     DUSTY_PROTECTION_TIME
 )
 from maenv.dusty_island.consts.actions import DustyControlAction
-from maenv.dusty_island.objects.weapons import Weapon, ThrowWeapon
-from maenv.dusty_island.objects.weapons.magic import MagicWeapon
-from maenv.dusty_island.objects.artifact import Artifact
+from maenv.dusty_island.objects.weapons import Weapon
 
 
 class Dusty(ActiveGameObject):
@@ -37,78 +28,34 @@ class Dusty(ActiveGameObject):
             DUSTY_LIFE,
             DUSTY_SPEED)
         self.agent_name = agent_name
-        self.artifacts: list[Artifact] = []
-        self.pending_weapons: list[Weapon | MagicWeapon] = []
+        self.pending_weapons: list[Weapon] = []
+        self.weapon: Weapon = None
 
-        self.team: Team = None
-        self.normal_weapon: Weapon = None
-        self.magic_weapon: MagicWeapon = None
+    def pickup_weapon(self, weapon: Weapon):
+        weapon.owner_id = self.short_id
+        weapon.follow_direction(self.direction)
+        self.weapon = weapon
+
+    def release_weapon(self):
+        # 던지거나... 기타 등등?
+        self.weapon = None
 
     def cancel_movement(self):
         super().cancel_movement()
-        self.normal_weapon and self.normal_weapon.sync(
-            self.center)
-        self.magic_weapon and self.magic_weapon.sync(
-            self.center)
-
-    def get_targeting_angle(self) -> int:
-        return self.normal_weapon.targeting_angle
-
-    def get_targeting_range(self) -> int:
-        return self.normal_weapon.targeting_range
-
-    def get_artifact(self, artifact_type: ArtifactType) -> Artifact:
-        return next((
-            artifact
-            for artifact in self.artifacts
-            if artifact.artifact_type == artifact_type), None)
-
-    def acquire_item(self, item: GameObject) -> bool:
-        if isinstance(item, Artifact):
-            if not self.magic_weapon:
-                return False
-            if item.artifact_type not in self.magic_weapon.equippable_artifacts_type:
-                return False
-            if len(self.artifacts) < MAX_AQUIRE_ARTIFACTS:
-                self.artifacts.append(item)
-                return True
-        return False
-
-    def remove_item(self, item: GameObject) -> bool:
-        if isinstance(item, Artifact):
-            self.artifacts.remove(item)
-        return True
+        self.weapon and self.weapon.sync(self.center)
 
     def handle_actions(self, action: DustyControlAction):
-        # ACTIVE_SKILL_1 기본 공격에 대해서만 처리한다.
+        if not self.weapon:
+            return
         match action:
             case DustyControlAction.DEFAULT_SKILL_DOWN:
-                if isinstance(self.normal_weapon, ThrowWeapon):
-                    self.normal_weapon.prepare()
-                else:
-                    if weapon := self.normal_weapon.activate(self.direction.current_direction):
-                        self.pending_weapons.append(weapon)
-                        return
-            case DustyControlAction.DEFAULT_SKILL_UP:
-                if isinstance(self.normal_weapon, ThrowWeapon):
-                    if weapon := self.normal_weapon.activate(self.direction.current_direction):
-                        self.pending_weapons.append(weapon)
-                        return
+                if weapon := self.weapon.activate(action, self.direction.current_direction):
+                    self.pending_weapons.append(weapon)
             case DustyControlAction.SPECIAL_SKILL_DOWN:
-                pass
+                self.weapon.prepare()
             case DustyControlAction.SPECIAL_SKILL_UP:
-                pass
-
-                # case DustyControlAction.ACTIVE_SKILL_2:
-                #     if not self.magic_weapon.artifact:
-                #         return
-                #     if magic_weapon := self.magic_weapon.activate(self.direction.current_direction):
-                #         if magics := magic_weapon.cast_spell():
-                #             self.pending_weapons.extend(magics)
-                #             self.magic_weapon.artifact = self.get_artifact(
-                #                 self.magic_weapon.artifact.artifact_type)
-                #             self.remove_item(self.magic_weapon.artifact)
-                #             return
+                if weapon := self.weapon.activate(action, self.direction.current_direction):
+                    self.pending_weapons.append(weapon)
 
     def render(self, surface: pygame.Surface):
         if self.damage_protection > 0:
@@ -116,10 +63,14 @@ class Dusty(ActiveGameObject):
                 pygame.draw.rect(surface, self.render_color, self)
         else:
             pygame.draw.rect(surface, self.render_color, self)
-        self.normal_weapon and self.normal_weapon.render(surface)
-        self.magic_weapon and self.magic_weapon.render(surface)
+        self.weapon and self.weapon.render(surface)
 
     def act(self):
         super().act()
-        self.normal_weapon and self.normal_weapon.sync(self.center)
-        self.magic_weapon and self.magic_weapon.sync(self.center)
+        self.weapon and not self.weapon.throwing and self.weapon.sync(
+            self.center)
+
+    def update_object(self):
+        super().update_object()
+        # activate 상태이면 env에서 update 한다.
+        self.weapon and not self.weapon.is_activated() and self.weapon.update_object()

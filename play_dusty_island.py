@@ -29,13 +29,19 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_1:
                     player_actions.append(
                         DustyControlAction.DEFAULT_SKILL_DOWN)
+                if event.key == pygame.K_2:
+                    player_actions.append(
+                        DustyControlAction.SPECIAL_SKILL_DOWN)
             elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_SPACE:
+                if event.key == pygame.K_1:
                     player_actions.append(
                         DustyControlAction.DEFAULT_SKILL_UP)
+                if event.key == pygame.K_2:
+                    player_actions.append(
+                        DustyControlAction.SPECIAL_SKILL_UP)
 
         event = pygame.key.get_pressed()
         if event[pygame.K_DOWN]:

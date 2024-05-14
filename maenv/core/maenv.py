@@ -158,6 +158,7 @@ class MaEnv(gym.Env):
                     continue
                 position = positions.pop()
                 game_object.center = position
+
             short_id = self.id_manager.assign_short_id(game_object.uuid)
 
             if game_object.spawn_radius > 0:
@@ -207,7 +208,7 @@ class MaEnv(gym.Env):
             if game_object.life < 1:
                 self.removing_game_object_ids.append(game_object.short_id)
                 continue
-            game_object.upadate_object()
+            game_object.update_object()
 
     def _post_step_processing(self):
         pass

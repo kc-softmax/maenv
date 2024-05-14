@@ -4,8 +4,8 @@ from maenv.core.actions import ControlAction
 
 
 class DustyCastingType(IntEnum):
-    VERTICAL_AXE_SWING = 1
-    THROW_STONE = 2
+    SWING_WEAPON = 1
+    THROW_WEAPON = 2
 
 
 @dataclass
