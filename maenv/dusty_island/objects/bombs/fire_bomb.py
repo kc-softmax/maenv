@@ -1,6 +1,6 @@
 import pygame
 import maenv.utils.colors as colors
-from maenv.core.cardinal_direction import CardinalDirectionType
+from maenv.core.direction import DirectionType
 from maenv.dusty_island.consts.bombs import (
     FIRE_BOMB_TICK_DAMAGE,
     FIRE_BOMB_ACTIVE_DURATION,
@@ -27,7 +27,7 @@ class FireBomb(Bomb):
         center: tuple[int, int],
         bomber_id: int,
         throw_gauge: float,
-        direction_type: CardinalDirectionType
+        direction_type: DirectionType
     ) -> None:
         super(FireBomb, self).__init__(
             center,

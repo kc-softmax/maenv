@@ -1,15 +1,16 @@
 from __future__ import annotations
 import math
+import pygame
 import maenv.utils.colors as colors
 from warnings import warn
-from maenv.core.actions import ControlAction
+from maenv.core.actions import ControlAction, ActionType, WheelAction
 from maenv.core.objects.active_object import ActiveGameObject
-from maenv.core.cardinal_direction import CardinalDirectionType
-from maenv.dusty_island.consts.actions import DustyControlAction
+from maenv.dusty_island.consts.actions import DustyActiveAction
 
 
 class Weapon(ActiveGameObject):
 
+    is_wheel_direction = True
     render_color = colors.CRIMSON
 
     swing_attack_range = None
@@ -19,6 +20,7 @@ class Weapon(ActiveGameObject):
 
     swing_angle = 1
     max_power_gauge = 1
+    power_accelation = 0.5
     min_throw_speed = 1
     throw_limit = -1
     active_life = 1
@@ -71,31 +73,35 @@ class Weapon(ActiveGameObject):
             self.active_gauge = 0
         return hitting
 
-    def prepare(self):
+    def prepare(self) -> bool:
+        if self.preparing:
+            return False
+        if self.cooldown > 0 or self.is_activated():
+            return False
         self.preparing = True
         self.power_gauge = 1
+        return True
 
     def activate(
         self,
-        action: DustyControlAction,
-        direction_type: CardinalDirectionType = None
+        action: DustyActiveAction,
     ) -> Weapon | None:
-        if direction_type:
-            self.update_direction(direction_type)
         if self.cooldown > 0:
             return None
         if self.is_activated():
             return None
 
-        self.throwing = action == DustyControlAction.SPECIAL_SKILL_UP
+        self.throwing = action == DustyActiveAction.SPECIAL_SKILL_UP
         if self.throwing:
+            if not self.preparing:
+                return None
             self.active_gauge = self.throw_active_duration
+            self.cooldown = self.cooldown_duration + self.power_gauge
             if self.throw_limit > 0:
                 self.throw_limit -= 1
         else:
             self.active_gauge = self.swing_active_duration
-
-        self.cooldown = self.cooldown_duration
+            self.cooldown = self.cooldown_duration
         self.life = self.active_life
         self.preparing = False
         return self
@@ -120,8 +126,9 @@ class Weapon(ActiveGameObject):
         self.centery = math.floor(self.centery + offset_y * axe_direction.y)
 
     def throw_act(self):
-        self.actions.append(ControlAction.FORWARD)
-        self.speed = self.min_throw_speed + self.power_gauge
+        self.actions.append((
+            ControlAction(ActionType.WHEEL_CONTROL, WheelAction.FORWARD)))
+        self.speed = self.min_throw_speed + self.power_gauge * self.power_accelation
         self.power_gauge -= 1
 
     def act(self):

@@ -1,41 +1,32 @@
 import maenv.utils.colors as colors
 from maenv.core.objects.passive_object import PassiveGameObject
 from maenv.core.state import ObjectState
-from maenv.dusty_island.objects.weapons import Weapon
 from maenv.dusty_island.consts.game import (
-    WEAPON_PICKUP_DURATION
+    ITEM_PICKUP_DURATION
 )
 
 
-class UnOwnedWeapon(PassiveGameObject):
+class PickUpItem(PassiveGameObject):
 
-    render_color = colors.ORANGE
+    render_color = colors.BLUE
+    item_type = None
 
     def __init__(
         self,
         width: int,
         height: int,
-        throw_limit: int,
-        weapon_cls: type[Weapon],
         center=[0, 0]
     ) -> None:
         # tree Type에 따라 변경
-        super(UnOwnedWeapon, self).__init__(
+        super(PickUpItem, self).__init__(
             center,
             width,
             height,
             1
         )
-        self.throw_limit = throw_limit
-        self.weapon_cls = weapon_cls
         self.pickup_candidate_map: dict[int, int] = {}
         self.pickup_expect_map: dict[int, int] = {}
         self.owner_id = -1
-
-    def activate_weapon(self) -> Weapon:
-        weapon = self.weapon_cls()
-        weapon.throw_limit = self.throw_limit
-        return weapon
 
     def collide_with_dusty(self, dusty_id: int):
         if dusty_id not in self.pickup_candidate_map:
@@ -45,11 +36,11 @@ class UnOwnedWeapon(PassiveGameObject):
             self.update_state(
                 ObjectState.START_PICKUP,
                 dusty_id,
-                WEAPON_PICKUP_DURATION
+                ITEM_PICKUP_DURATION
             )
             # new dusty
         self.pickup_candidate_map[dusty_id] += 1
-        if self.pickup_candidate_map[dusty_id] > WEAPON_PICKUP_DURATION:
+        if self.pickup_candidate_map[dusty_id] > ITEM_PICKUP_DURATION:
             self.owner_id = dusty_id
             self.life = 0
 

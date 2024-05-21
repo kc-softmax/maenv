@@ -36,7 +36,6 @@ class GameObject(pygame.Rect):
         # if [2] is -1 is randomized range [0] , [1]
         self.delay_before_spawn = (0, 0, 0)
         self.impenetrability = False
-        self.eventless = False
 
     @property
     def position(self):

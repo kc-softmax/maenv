@@ -1,5 +1,5 @@
 import collections
-from maenv.core.cardinal_direction import CardinalDirectionType
+from maenv.core.direction import DirectionType
 from maenv.core.objects.active_object import ActiveGameObject
 
 
@@ -18,7 +18,7 @@ class Bomb(ActiveGameObject):
         size: int,
         bomber_id: int,
         throw_gauge: float,
-        direction_type: CardinalDirectionType
+        direction_type: DirectionType
     ) -> None:
         super(Bomb, self).__init__(
             center,

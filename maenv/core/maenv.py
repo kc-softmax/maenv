@@ -1,3 +1,5 @@
+import collections
+import gymnasium as gym
 from maenv.core.tile_map import TileMap, Tile
 from maenv.core.objects.active_object import ActiveGameObject
 from maenv.core.objects.collision_object import CollisionObject
@@ -6,8 +8,6 @@ from maenv.core.objects.game_object import GameObject
 from maenv.core.actions import ControlAction
 from maenv.core.state import ObjectState
 from maenv.core.id_manager import IDManager
-import collections
-import gymnasium as gym
 from warnings import warn
 from maenv.utils import randomize_center
 
@@ -25,8 +25,7 @@ class MaEnv(gym.Env):
         self.pending_spawn_objects: list[GameObject] = []
         self.step_count = 0
         self.map: TileMap = TileMap(30, 30, 32)
-        self.passive_address_map: dict[int: list[GameObject]] = collections.defaultdict(
-            list)
+        self.passive_address_map: dict[int: dict[int: GameObject]] = {}
 
     def reset(self, seed: int):
         super().reset(seed=seed)
@@ -53,21 +52,24 @@ class MaEnv(gym.Env):
         return obs, rewards, terminateds, truncateds, infos
 
     def _get_address_map(self) -> dict[int: list[GameObject]]:
-        address_map: dict[int: list[GameObject]
-                          ] = self.passive_address_map.copy()
+        address_map: dict[
+            int: dict[int, GameObject]] = self.passive_address_map.copy()
         for game_object in self.game_objects.values():
             if not isinstance(game_object, ActiveGameObject):
                 continue
             address = self.map.get_tile_address(
                 game_object.centerx, game_object.centery)
-            address_map[address].append(game_object)
+            if address not in address_map:
+                address_map[address] = {}
+            address_map[address][game_object.short_id] = game_object
         return address_map
 
-    def _check_collisions(self, address_map: dict[int: list[GameObject]]) -> collections.deque[
+    def _check_collisions(self, address_map: dict[int: dict[int, GameObject]]) -> collections.deque[
             tuple[GameObject, GameObject]]:
 
         collisions: collections.deque[
             tuple[GameObject, GameObject]] = collections.deque()
+
         for game_object in self.game_objects.values():
             if not isinstance(game_object, ActiveGameObject):
                 continue
@@ -75,8 +77,7 @@ class MaEnv(gym.Env):
             neighbors_addresses = self.map.get_neighbor_addresses(
                 game_object.centerx, game_object.centery)
             for address in neighbors_addresses:
-                addressed_objects = address_map[address]
-
+                addressed_object_info = address_map.get(address, {})
                 if address in self.map.restrict_addresses:
                     restrcit_tile: Tile = self.map.tile_map[address]
                     if game_object.colliderect(restrcit_tile):
@@ -85,8 +86,8 @@ class MaEnv(gym.Env):
                             restrcit_tile.width,
                             restrcit_tile.height,
                         )))
-                for addressed_object in addressed_objects:
-                    if game_object == addressed_object:
+                for object_id, addressed_object in addressed_object_info.items():
+                    if game_object.short_id == object_id:
                         continue
                     if game_object.colliderect(addressed_object):
                         collisions.append((game_object, addressed_object))
@@ -117,10 +118,12 @@ class MaEnv(gym.Env):
         if isinstance(game_object, PassiveGameObject):
             address = self.map.get_tile_address(
                 game_object.centerx, game_object.centery)
-            if address in self.passive_address_map:
+            if address in self.passive_address_map and game_object.short_id in self.passive_address_map[address]:
                 print(self.passive_address_map[address])
-                warn('check remove passive object algorithm')
-            self.passive_address_map[address].append(game_object)
+                warn('check remove passive object algorithm', game_object)
+            if not self.passive_address_map.get('address'):
+                self.passive_address_map[address] = {}
+            self.passive_address_map[address][game_object.short_id] = game_object
 
     def _handle_update_object(self, game_object: ActiveGameObject, states: list[ObjectState]):
         pass
@@ -129,9 +132,9 @@ class MaEnv(gym.Env):
         if isinstance(game_object, PassiveGameObject):
             address = self.map.get_tile_address(
                 game_object.centerx, game_object.centery)
-            self.passive_address_map[address].remove(game_object)
+            self.passive_address_map[address].pop(game_object.short_id)
             if not self.passive_address_map[address]:
-                del self.passive_address_map[address]
+                self.passive_address_map.pop(address)
 
     def _register_game_objects(self):
 
@@ -176,15 +179,13 @@ class MaEnv(gym.Env):
                 raise Exception(f"GameObject {short_id} already exists")
             game_object.set_short_id(short_id)
             self.game_objects[short_id] = game_object
-            not game_object.eventless and self._handle_register_object(
+            self._handle_register_object(
                 game_object)
         delay_spawn_objects and self.pending_spawn_objects.extend(
             delay_spawn_objects)
 
     def _update_state_of_objects(self):
         for game_object in self.game_objects.values():
-            if game_object.eventless:
-                continue
             states = game_object.get_states()
             states and self._handle_update_object(game_object, states)
 
@@ -196,8 +197,7 @@ class MaEnv(gym.Env):
             if not game_object:
                 continue
             self.id_manager.release_id(game_object.uuid, game_object.short_id)
-            not game_object.eventless and self._handle_remove_object(
-                game_object)
+            self._handle_remove_object(game_object)
 
     def _step_processing(self, actions: dict[int | str, list[ControlAction]]):
         for game_object in self.game_objects.values():

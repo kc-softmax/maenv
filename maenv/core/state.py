@@ -13,6 +13,8 @@ class ObjectState(IntEnum):
     KNOCKBACK = 8  # 주로 타의로 움직일때
     START_PICKUP = 9  # 무언가 줍기 시작
     CANCEL_PICKUP = 10  # 줍기를 취소
+    PICKUP = 11  # 뭔가를 줍줍
+    DROP = 12  # 드랍
 
 
 @dataclass

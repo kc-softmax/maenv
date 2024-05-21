@@ -1,14 +1,14 @@
 import pygame
-from maenv.core.objects.active_object import ActiveGameObject
-from maenv.core.objects.game_object import GameObject
+from maenv.core.actions import ControlAction
 from maenv.core.state import ObjectState
+from maenv.core.objects.active_object import ActiveGameObject
 from maenv.dusty_island.consts.dusty import (
     DUSTY_SIZE,
     DUSTY_LIFE,
     DUSTY_SPEED,
     DUSTY_PROTECTION_TIME
 )
-from maenv.dusty_island.consts.actions import DustyControlAction
+from maenv.dusty_island.consts.actions import DustyActiveAction
 from maenv.dusty_island.objects.weapons import Weapon
 
 
@@ -29,33 +29,43 @@ class Dusty(ActiveGameObject):
             DUSTY_SPEED)
         self.agent_name = agent_name
         self.pending_weapons: list[Weapon] = []
+        self.aiming_vector = pygame.Vector2(0, 1)
         self.weapon: Weapon = None
 
     def pickup_weapon(self, weapon: Weapon):
         weapon.owner_id = self.short_id
         weapon.follow_direction(self.direction)
+        self.update_state(ObjectState.PICKUP, value=str(weapon))
         self.weapon = weapon
 
     def release_weapon(self):
         # 던지거나... 기타 등등?
+        self.update_state(ObjectState.DROP, value=str(self.weapon))
         self.weapon = None
 
     def cancel_movement(self):
         super().cancel_movement()
         self.weapon and self.weapon.sync(self.center)
 
-    def handle_actions(self, action: DustyControlAction):
+    def handle_actions(self, action: int):
         if not self.weapon:
             return
+        action = DustyActiveAction(action)
         match action:
-            case DustyControlAction.DEFAULT_SKILL_DOWN:
-                if weapon := self.weapon.activate(action, self.direction.current_direction):
+            case DustyActiveAction.DEFAULT_SKILL_DOWN:
+                if weapon := self.weapon.activate(action):
                     self.pending_weapons.append(weapon)
-            case DustyControlAction.SPECIAL_SKILL_DOWN:
-                self.weapon.prepare()
-            case DustyControlAction.SPECIAL_SKILL_UP:
-                if weapon := self.weapon.activate(action, self.direction.current_direction):
+            case DustyActiveAction.SPECIAL_SKILL_DOWN:
+                if self.weapon.prepare():
+                    self.aiming_vector = self.direction.get_vector().copy()
+            case DustyActiveAction.SPECIAL_SKILL_UP:
+                if weapon := self.weapon.activate(action):
+                    weapon.force_direction_vector = self.aiming_vector
                     self.pending_weapons.append(weapon)
+            case DustyActiveAction.AIMING_LEFT:
+                self.aiming_vector.rotate_ip(-5)
+            case DustyActiveAction.AIMING_RIGHT:
+                self.aiming_vector.rotate_ip(5)
 
     def render(self, surface: pygame.Surface):
         if self.damage_protection > 0:

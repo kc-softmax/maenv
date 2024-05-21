@@ -1,6 +1,5 @@
 from enum import IntEnum
 from dataclasses import dataclass
-from maenv.core.actions import ControlAction
 
 
 class DustyCastingType(IntEnum):
@@ -8,11 +7,12 @@ class DustyCastingType(IntEnum):
     THROW_WEAPON = 2
 
 
-@dataclass
-class DustyControlAction(ControlAction):
-    DEFAULT_SKILL_DOWN = 5
-    DEFAULT_SKILL_UP = 6
-    DEFAULT_SKILL_CANCEL = 7
-    SPECIAL_SKILL_DOWN = 8
-    SPECIAL_SKILL_UP = 9
-    SPECIAL_SKILL_CANCEL = 10
+class DustyActiveAction(IntEnum):
+    DEFAULT_SKILL_DOWN = 1
+    DEFAULT_SKILL_UP = 2
+    DEFAULT_SKILL_CANCEL = 3
+    SPECIAL_SKILL_DOWN = 4
+    SPECIAL_SKILL_UP = 5
+    SPECIAL_SKILL_CANCEL = 6
+    AIMING_LEFT = 7
+    AIMING_RIGHT = 8

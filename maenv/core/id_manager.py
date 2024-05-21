@@ -18,7 +18,7 @@ class IDManager:
                 return -1
         self.uuid_to_short_id[uuid] = short_id
         self.short_id_to_uuid[short_id] = uuid
-        self.next_short_id = short_id
+        self.next_short_id = short_id + 1
         return short_id
 
     def release_id(self, uuid: UUID, short_id: int):

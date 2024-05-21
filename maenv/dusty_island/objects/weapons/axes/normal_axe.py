@@ -43,3 +43,6 @@ class NormalAxe(Weapon):
             return NORMAL_AXE_THROW_DAMAGE
         else:
             return NORMAL_AXE_SWING_DAMAGE
+
+    def __str__(self):
+        return 'normal_axe'

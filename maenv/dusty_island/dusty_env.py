@@ -2,7 +2,8 @@ import math
 import pygame
 from maenv.utils.colors import (
     BETA_GRID,
-    BLACK
+    BLACK,
+    CRIMSON
 )
 from maenv.core.maenv import MaEnv
 from maenv.core.actions import ControlAction
@@ -15,9 +16,8 @@ from maenv.dusty_island.maps.default_map import DefaultMap
 from maenv.dusty_island.objects.trees import Tree, TrimmedTree
 from maenv.dusty_island.objects.dusties.dusty import Dusty
 from maenv.dusty_island.objects.bombs import Bomb
-from maenv.dusty_island.objects.weapons import Weapon
-from maenv.dusty_island.objects.weapons.axes import NormalAxe
-from maenv.dusty_island.objects.weapons import UnOwnedWeapon
+from maenv.dusty_island.objects.weapons import Weapon, NormalAxe
+from maenv.dusty_island.objects.items import UnOwnedWeapon
 from maenv.dusty_island.consts.game import (
     MAX_AGENTS,
     TREE_RATIO,
@@ -33,6 +33,7 @@ class DustyEnv(MaEnv):
         super().__init__()
         self.map = DefaultMap()
         self.agents: dict[int, Dusty] = {}
+        self.throwing_weapons: dict[int: Weapon] = {}
         self.tree_count = math.floor(MAX_AGENTS * TREE_RATIO)
         self.removed_tree = 0
         self.pending_spawn_objects.extend(
@@ -62,6 +63,10 @@ class DustyEnv(MaEnv):
             pygame.draw.line(
                 surface, agent.render_color,
                 agent.center, agent.center + agent.direction.get_vector() * 32, 10)
+            if agent.weapon and agent.weapon.preparing:
+                pygame.draw.line(
+                    surface, CRIMSON,
+                    agent.center, agent.center + agent.aiming_vector * 32, 10)
 
         return pygame.transform.scale(
             surface, (display_width, display_height))
@@ -80,6 +85,9 @@ class DustyEnv(MaEnv):
         if isinstance(game_object, Dusty):
             self.agents[game_object.short_id] = game_object
             game_object.pickup_weapon(NormalAxe())
+        elif isinstance(game_object, Weapon):
+            if game_object.throwing:
+                self.throwing_weapons[game_object.short_id] = game_object
         elif isinstance(game_object, Tree):
             self.map.update_tile_state(
                 self.map.get_tile_address(
@@ -97,17 +105,21 @@ class DustyEnv(MaEnv):
             )
             self.removed_tree += 1
         elif isinstance(game_object, Weapon):
-            if game_object.throwing and game_object.throw_limit != 0:
-                # -1 is infinity
-                self.pending_spawn_objects.append(
-                    UnOwnedWeapon(
-                        width=game_object.width,
-                        height=game_object.height,
-                        throw_limit=game_object.throw_limit,
-                        weapon_cls=type(game_object),
-                        center=game_object.center
+            if game_object.throwing:
+                if game_object.throw_limit != 0:
+                    # -1 is infinity
+                    # 방향도
+                    self.pending_spawn_objects.append(
+                        UnOwnedWeapon(
+                            width=game_object.width,
+                            height=game_object.height,
+                            throw_limit=game_object.throw_limit,
+                            weapon_cls=type(game_object),
+                            center=(game_object.centerx, game_object.centery),
+                            is_facing_right=game_object.direction.get_vector().x > 0
+                        )
                     )
-                )
+                    self.throwing_weapons.pop(game_object.short_id)
         elif isinstance(game_object, UnOwnedWeapon):
             if owner := self.agents.get(game_object.owner_id):
                 # generate weapon and attach dusty:
@@ -133,6 +145,9 @@ class DustyEnv(MaEnv):
                 # 음 어떻게 해야할까
                 return
             if isinstance(other, CollisionObject):
+                return
+
+            if isinstance(other, Weapon) and src.owner_id == other.owner_id:
                 return
             if other.get_hit(src.get_damage()):
                 src.get_hit(src.get_damage())
@@ -177,10 +192,12 @@ class DustyEnv(MaEnv):
     def _step_processing(self, actions: dict[int | str, list[ControlAction]]):
         super()._step_processing(actions)
 
+        for throwing_weapon in self.throwing_weapons.values():
+            self._add_moving_event(throwing_weapon)
+
         for agent in self.agents.values():
             while agent.pending_weapons:
                 weapon = agent.pending_weapons.pop()
-                weapon.force_direction_vector = agent.get_target_vector()
                 if weapon.throwing:
                     agent.release_weapon()
                     casting_type = DustyCastingType.THROW_WEAPON
